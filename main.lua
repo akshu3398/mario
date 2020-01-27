@@ -11,15 +11,24 @@ require("Util")
 require("Map")
 
 function love.load(  )
+
+    math.randomseed(os.time())
+
     map = Map()
 
     love.graphics.setDefaultFilter('nearest', 'nearest')
+
+    love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8))
 
     push:setupScreen(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
         fullscreen = false,
         resizable = true,
         vsync = true
     })
+end
+
+function love.resize( w, h )
+    push:resize(w, h)
 end
 
 function love.update( dt )
