@@ -3,6 +3,8 @@ Player = Class()
 require("Animation")
 
 local MOVE_SPEED = 80
+local JUMP_VELOCITY = 400
+local GRAVITY = 40
 
 function Player:init( map )
     self.width = 16
@@ -10,6 +12,9 @@ function Player:init( map )
 
     self.x = map.tileWidth * 10
     self.y = map.tileHeight * (map.mapHeight / 2 - 1) - self.height
+
+    self.dx = 0
+    self.dy = 0
 
     self.texture  = love.graphics.newImage('graphics/blue_alien.png')
     self.frames = generateQuads(self.texture, self.width, self.height)
@@ -31,36 +36,70 @@ function Player:init( map )
                 self.frames[9], self.frames[10], self.frames[11]
             },
             interval = 0.15
-        }
+        },
+        ['jumping'] = Animation {
+            texture = self.texture,
+            frames = {
+                self.frames[3]
+            },
+            interval = 1
+        },
     }
 
     self.animation = self.animations['idle']
 
     self.behaviors = {
         ['idle'] = function ( dt )
-            if love.keyboard.isDown('a')  then
-                self.x = self.x - MOVE_SPEED * dt
+            if love.keyboard.wasPressed('space') then
+                self.dy = -JUMP_VELOCITY
+                self.state = 'jumping'
+                self.animation = self.animations['jumping']
+            elseif love.keyboard.isDown('a')  then
+                self.dx = -MOVE_SPEED
                 self.animation = self.animations['walking']
                 self.direction = 'left'
             elseif love.keyboard.isDown('d') then
-                self.x = self.x + MOVE_SPEED * dt
+                self.dx = MOVE_SPEED
                 self.animation = self.animations['walking']
                 self.direction = 'right'
             else
+                self.dx = 0
                 self.animation = self.animations['idle']
             end
         end,
         ['walking'] = function ( dt )
-            if love.keyboard.isDown('a')  then
-                self.x = self.x - MOVE_SPEED * dt
+            if love.keyboard.wasPressed('space') then
+                self.dy = -JUMP_VELOCITY
+                self.state = 'jumping'
+                self.animation = self.animations['jumping']
+            elseif love.keyboard.isDown('a')  then
+                self.dx = -MOVE_SPEED
                 self.animation = self.animations['walking']
                 self.direction = 'left'
             elseif love.keyboard.isDown('d') then
-                self.x = self.x + MOVE_SPEED * dt
+                self.dx = MOVE_SPEED
                 self.animation = self.animations['walking']
                 self.direction = 'right'
             else
+                self.dx = 0
                 self.animation = self.animations['idle']
+            end
+        end,
+        ['jumping'] = function ( dt )
+            if love.keyboard.isDown('a')  then
+                self.dx = -MOVE_SPEED
+                self.direction = 'left'
+            elseif love.keyboard.isDown('d') then
+                self.dx = MOVE_SPEED
+                self.direction = 'right'
+            end
+            self.dy = self.dy + GRAVITY
+
+            if self.y >= map.tileHeight * (map.mapHeight / 2 - 1) - self.height then
+                self.y = map.tileHeight * (map.mapHeight / 2 - 1) - self.height
+                self.dy = 0
+                self.state = 'idle'
+                self.animation = self.animations[self.state]
             end
         end,
     }
@@ -69,6 +108,8 @@ end
 function Player:update( dt )
     self.behaviors[self.state](dt)
     self.animation:update(dt)
+    self.x = self.x + self.dx * dt
+    self.y = self.y + self.dy * dt
 end
 
 function Player:render( )

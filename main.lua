@@ -25,6 +25,8 @@ function love.load(  )
         resizable = true,
         vsync = true
     })
+
+    love.keyboard.keysPressed = {}
 end
 
 function love.resize( w, h )
@@ -36,10 +38,17 @@ function love.keypressed( key )
         -- the function LÖVE2D uses to quit the application
         love.event.quit()
     end
+    love.keyboard.keysPressed[key] = true
+end
+
+function love.keyboard.wasPressed( key )
+    return love.keyboard.keysPressed[key]
 end
 
 function love.update( dt )
     map:update(dt)
+
+    love.keyboard.keysPressed = {}
 end
 
 function love.draw(  )
