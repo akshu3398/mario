@@ -1,4 +1,5 @@
 require("Util")
+require("Player")
 
 Map = Class{}
 
@@ -33,6 +34,8 @@ function Map:init( ... )
 
     self.mapWidthPixles = self.mapWidth * self.tileWidth
     self.mapHeightPixles = self.mapHeight * self.tileHeight
+
+    self.player = Player(self)
 
     -- filling the map with empty tiles
     for y=1,self.mapHeight do
@@ -105,6 +108,7 @@ function Map:update( dt )
     self.camX = love.keyboard.isDown('a') and math.max(0, math.floor( self.camX + dt * -SCROLL_SPEED )) or love.keyboard.isDown('d') and math.min(self.mapWidthPixles - VIRTUAL_WIDTH, math.floor( self.camX + dt * SCROLL_SPEED )) or self.camX
     self.camY = love.keyboard.isDown('w') and math.max(0, math.floor( self.camY + dt * -SCROLL_SPEED )) or love.keyboard.isDown('s') and math.min(self.mapHeightPixles - VIRTUAL_HEIGHT, math.floor( self.camY + dt * SCROLL_SPEED )) or self.camY
 
+    self.player:update(dt)
 end
 
 function Map:render( )
@@ -117,4 +121,6 @@ function Map:render( )
             end
         end
     end
+
+    self.player:render()
 end
