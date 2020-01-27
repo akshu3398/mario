@@ -16,6 +16,7 @@ function Player:init( map )
     self.dx = 0
     self.dy = 0
 
+    self.map = map
     self.texture  = love.graphics.newImage('graphics/blue_alien.png')
     self.frames = generateQuads(self.texture, self.width, self.height)
 
@@ -110,6 +111,23 @@ function Player:update( dt )
     self.animation:update(dt)
     self.x = self.x + self.dx * dt
     self.y = self.y + self.dy * dt
+
+    if self.dy < 0 then
+        if self.map:tileAt(self.x, self.y) ~= TILE_EMPTY or self.map:tileAt(self.x + self.width - 1, self.y) ~= TILE_EMPTY then
+            self.dy = 0
+
+            if self.map:tileAt(self.x, self.y) == JUMP_BLOCK then
+                self.map:setTile(math.floor(self.x / self.map.tileWidth) + 1, 
+                    math.floor( self.y / self.map.tileHeight ) + 1, JUMP_BLOCK_HIT)
+            end
+
+            if self.map:tileAt(self.x + self.width - 1, self.y) == JUMP_BLOCK then
+                self.map:setTile(math.floor((self.x + self.width - 1) / self.map.tileWidth) + 1, 
+                    math.floor( self.y / self.map.tileHeight ) + 1, JUMP_BLOCK_HIT)
+            end
+
+        end
+    end
 end
 
 function Player:render( )

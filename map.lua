@@ -16,6 +16,7 @@ MUSHROOM_TOP = 10
 MUSHROOM_BOTTOM = 11
 
 JUMP_BLOCK = 5
+JUMP_BLOCK_HIT = 9
 
 local SCROLL_SPEED = 62
 
@@ -95,6 +96,11 @@ function Map:init( ... )
     end
 end
 
+function Map:tileAt( x, y )
+    return self:getTile(math.floor( x / self.tileWidth ) + 1, 
+                        math.floor( y / self.tileHeight ) + 1)
+end
+
 function Map:setTile( x, y, tile )
     self.tiles[(y - 1) * self.mapWidth + x] = tile
 end
@@ -104,9 +110,6 @@ function Map:getTile( x, y )
 end
 
 function Map:update( dt )
-
-    -- self.camX = love.keyboard.isDown('a') and math.max(0, math.floor( self.camX + dt * -SCROLL_SPEED )) or love.keyboard.isDown('d') and math.min(self.mapWidthPixles - VIRTUAL_WIDTH, math.floor( self.camX + dt * SCROLL_SPEED )) or self.camX
-    -- self.camY = love.keyboard.isDown('w') and math.max(0, math.floor( self.camY + dt * -SCROLL_SPEED )) or love.keyboard.isDown('s') and math.min(self.mapHeightPixles - VIRTUAL_HEIGHT, math.floor( self.camY + dt * SCROLL_SPEED )) or self.camY
 
     self.camX = math.max( 0,
         math.min( self.player.x - VIRTUAL_WIDTH / 2,
