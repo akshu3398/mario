@@ -105,8 +105,12 @@ end
 
 function Map:update( dt )
 
-    self.camX = love.keyboard.isDown('a') and math.max(0, math.floor( self.camX + dt * -SCROLL_SPEED )) or love.keyboard.isDown('d') and math.min(self.mapWidthPixles - VIRTUAL_WIDTH, math.floor( self.camX + dt * SCROLL_SPEED )) or self.camX
-    self.camY = love.keyboard.isDown('w') and math.max(0, math.floor( self.camY + dt * -SCROLL_SPEED )) or love.keyboard.isDown('s') and math.min(self.mapHeightPixles - VIRTUAL_HEIGHT, math.floor( self.camY + dt * SCROLL_SPEED )) or self.camY
+    -- self.camX = love.keyboard.isDown('a') and math.max(0, math.floor( self.camX + dt * -SCROLL_SPEED )) or love.keyboard.isDown('d') and math.min(self.mapWidthPixles - VIRTUAL_WIDTH, math.floor( self.camX + dt * SCROLL_SPEED )) or self.camX
+    -- self.camY = love.keyboard.isDown('w') and math.max(0, math.floor( self.camY + dt * -SCROLL_SPEED )) or love.keyboard.isDown('s') and math.min(self.mapHeightPixles - VIRTUAL_HEIGHT, math.floor( self.camY + dt * SCROLL_SPEED )) or self.camY
+
+    self.camX = math.max( 0,
+        math.min( self.player.x - VIRTUAL_WIDTH / 2,
+            math.min( self.mapWidthPixles - VIRTUAL_WIDTH,self.player.x ) ) )
 
     self.player:update(dt)
 end

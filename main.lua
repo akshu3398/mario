@@ -31,6 +31,13 @@ function love.resize( w, h )
     push:resize(w, h)
 end
 
+function love.keypressed( key )
+    if key == 'escape' then
+        -- the function LÖVE2D uses to quit the application
+        love.event.quit()
+    end
+end
+
 function love.update( dt )
     map:update(dt)
 end
