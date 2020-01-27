@@ -14,9 +14,12 @@ function Map:init( ... )
     self.tiles = {}
 
     self.camX = 0
-    self.camY = 0
+    self.camY = -3
 
     self.tileSprites = generateQuads(self.spriteSheet, self.tileWidth, self.tileHeight)
+
+    self.mapWidthPixles = self.mapWidth * self.tileWidth
+    self.mapHeightPixles = self.mapHeight * self.tileHeight
 
     -- filling the map with empty tiles
     for y=1,self.mapHeight / 2 do
@@ -42,7 +45,10 @@ function Map:getTile( x, y )
 end
 
 function Map:update( dt )
-    self.camX = self.camX + SCROLL_SPEED * dt
+
+    self.camX = love.keyboard.isDown('a') and math.max(0, math.floor( self.camX + dt * -SCROLL_SPEED )) or love.keyboard.isDown('d') and math.min(self.mapWidthPixles - VIRTUAL_WIDTH, math.floor( self.camX + dt * SCROLL_SPEED )) or self.camX
+    self.camY = love.keyboard.isDown('w') and math.max(0, math.floor( self.camY + dt * -SCROLL_SPEED )) or love.keyboard.isDown('s') and math.min(self.mapHeightPixles - VIRTUAL_HEIGHT, math.floor( self.camY + dt * SCROLL_SPEED )) or self.camY
+
 end
 
 function Map:render( )

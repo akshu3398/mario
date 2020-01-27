@@ -28,8 +28,8 @@ end
 
 function love.draw(  )
     push:apply('start')
-    love.graphics.translate(math.floor( -map.camX ), math.floor( -map.camY ))
     love.graphics.clear(108/255, 140/255, 1, 1)
+    love.graphics.translate(math.floor( -map.camX + 0.5 ), math.floor( -map.camY + 0.5))
     map:render()
     push:apply('end')
 end
