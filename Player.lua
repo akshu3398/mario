@@ -1,5 +1,7 @@
 Player = Class()
 
+require("Animation")
+
 local MOVE_SPEED = 80
 
 function Player:init( map )
@@ -11,12 +13,68 @@ function Player:init( map )
 
     self.texture  = love.graphics.newImage('graphics/blue_alien.png')
     self.frames = generateQuads(self.texture, self.width, self.height)
+
+    self.state = 'idle'
+    self.direction = 'right'
+
+    self.animations = {
+        ['idle'] = Animation {
+            texture = self.texture,
+            frames = {
+                self.frames[1]
+            },
+            interval = 1
+        },
+        ['walking'] = Animation {
+            texture = self.texture,
+            frames = {
+                self.frames[9], self.frames[10], self.frames[11]
+            },
+            interval = 0.15
+        }
+    }
+
+    self.animation = self.animations['idle']
+
+    self.behaviors = {
+        ['idle'] = function ( dt )
+            if love.keyboard.isDown('a')  then
+                self.x = self.x - MOVE_SPEED * dt
+                self.animation = self.animations['walking']
+                self.direction = 'left'
+            elseif love.keyboard.isDown('d') then
+                self.x = self.x + MOVE_SPEED * dt
+                self.animation = self.animations['walking']
+                self.direction = 'right'
+            else
+                self.animation = self.animations['idle']
+            end
+        end,
+        ['walking'] = function ( dt )
+            if love.keyboard.isDown('a')  then
+                self.x = self.x - MOVE_SPEED * dt
+                self.animation = self.animations['walking']
+                self.direction = 'left'
+            elseif love.keyboard.isDown('d') then
+                self.x = self.x + MOVE_SPEED * dt
+                self.animation = self.animations['walking']
+                self.direction = 'right'
+            else
+                self.animation = self.animations['idle']
+            end
+        end,
+    }
 end
 
 function Player:update( dt )
-    self.x = self.x + (love.keyboard.isDown('a') and -MOVE_SPEED * dt or love.keyboard.isDown('d') and MOVE_SPEED * dt or 0)
+    self.behaviors[self.state](dt)
+    self.animation:update(dt)
 end
 
 function Player:render( )
-    love.graphics.draw(self.texture, self.frames[1], self.x, self.y)
+    local scaleX = self.direction == 'right' and 1 or -1
+    love.graphics.draw(self.texture, self.animation:getCurrentFrame(), 
+        math.floor(self.x + self.width / 2), math.floor(self.y + self.height / 2),
+        0, scaleX, 1,
+        self.width / 2, self.height / 2)
 end
