@@ -82,7 +82,7 @@ function Map:init()
         end
 
         -- 5% chance to generate a mushroom
-        if math.random(20) == 1 then
+        if math.random(20) == 1 and x ~= self:tileAt(self.player.x, self.player.y).x then
             -- top side of pipe
             local mushroomStart = self.mapHeight / 2
             
