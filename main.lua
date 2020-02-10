@@ -53,20 +53,12 @@ end
 
 -- global key pressed function
 function love.keyboard.wasPressed(key)
-    if (love.keyboard.keysPressed[key]) then
-        return true
-    else
-        return false
-    end
+    return love.keyboard.keysPressed[key]
 end
 
 -- global key released function
 function love.keyboard.wasReleased(key)
-    if (love.keyboard.keysReleased[key]) then
-        return true
-    else
-        return false
-    end
+    return love.keyboard.keysReleased[key]
 end
 
 -- called whenever a key is pressed

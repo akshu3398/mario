@@ -15,8 +15,8 @@ function Player:init(map)
     self.height = 20
 
     -- offset from top a to center to support sprite flipping
-    self.xOffset = 8
-    self.yOffset = 10
+    self.xOffset = self.width/2
+    self.yOffset = self.height/2
 
     -- reference to map for checking tiles
     self.map = map
@@ -82,25 +82,24 @@ function Player:init(map)
     -- behavior map we can call based on player state
     self.behaviors = {
         ['idle'] = function(dt)
-            
             -- add spacebar functionality to trigger jump state
             if love.keyboard.wasPressed('space') then
                 self.dy = -JUMP_VELOCITY
                 self.state = 'jumping'
-                self.animation = self.animations['jumping']
+                self.animation = self.animations[self.state]
                 self.sounds['jump']:play()
             elseif love.keyboard.isDown('a') then
                 self.direction = 'a'
                 self.dx = -WALKING_SPEED
                 self.state = 'walking'
-                self.animations['walking']:restart()
-                self.animation = self.animations['walking']
+                self.animations[self.state]:restart()
+                self.animation = self.animations[self.state]
             elseif love.keyboard.isDown('d') then
                 self.direction = 'd'
                 self.dx = WALKING_SPEED
                 self.state = 'walking'
-                self.animations['walking']:restart()
-                self.animation = self.animations['walking']
+                self.animations[self.state]:restart()
+                self.animation = self.animations[self.state]
             else
                 self.dx = 0
             end
@@ -112,7 +111,7 @@ function Player:init(map)
             if love.keyboard.wasPressed('space') then
                 self.dy = -JUMP_VELOCITY
                 self.state = 'jumping'
-                self.animation = self.animations['jumping']
+                self.animation = self.animations[self.state]
                 self.sounds['jump']:play()
             elseif love.keyboard.isDown('a') then
                 self.direction = 'a'
@@ -123,7 +122,7 @@ function Player:init(map)
             else
                 self.dx = 0
                 self.state = 'idle'
-                self.animation = self.animations['idle']
+                self.animation = self.animations[self.state]
             end
 
             -- check for collisions moving a and d
@@ -136,7 +135,7 @@ function Player:init(map)
                 
                 -- if so, reset velocity and position and change state
                 self.state = 'jumping'
-                self.animation = self.animations['jumping']
+                self.animation = self.animations[self.state]
             end
         end,
         ['jumping'] = function(dt)
@@ -151,6 +150,8 @@ function Player:init(map)
             elseif love.keyboard.isDown('d') then
                 self.direction = 'd'
                 self.dx = WALKING_SPEED
+            else
+                self.dx = 0
             end
 
             -- apply map's gravity before y velocity
