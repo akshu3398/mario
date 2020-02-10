@@ -47,7 +47,7 @@ function Player:init(map)
     self.dy = 0
 
     -- position on top of map tiles
-    self.y = self.map.tileHeight * ((map.mapHeight - 2) / 2) - self.height
+    self.y = self.map.tileHeight * ((self.map.mapHeight - 2) / 2) - self.height
     self.x = self.map.tileWidth * 10
 
     -- initialize all player animations
@@ -199,8 +199,12 @@ function Player:calculateJumps()
     -- if we have negative y velocity (jumping), check if we collide
     -- with any blocks above us
     if self.dy < 0 then
-        if self.map:tileAt(self.x, self.y).id ~= TILE_EMPTY or
-            self.map:tileAt(self.x + self.width - 1, self.y).id ~= TILE_EMPTY then
+        if (self.map:tileAt(self.x, self.y).id ~= TILE_EMPTY and 
+            self.map:tileAt(self.x, self.y).id ~= CLOUD_LEFT and 
+            self.map:tileAt(self.x, self.y).id ~= CLOUD_RIGHT) or
+            (self.map:tileAt(self.x + self.width - 1, self.y).id ~= CLOUD_RIGHT and
+            self.map:tileAt(self.x + self.width - 1, self.y).id ~= CLOUD_LEFT and
+            self.map:tileAt(self.x + self.width - 1, self.y).id ~= TILE_EMPTY) then
             -- reset y velocity
             self.dy = 0
 
