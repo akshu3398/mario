@@ -37,7 +37,7 @@ function Player:init(map)
 
     -- used to determine behavior and animations
     self.state = 'idle'
-    self.gameState = 'playing'
+    self.gameState = 'play'
 
     -- determines sprite flipping
     self.direction = 'a'
@@ -180,15 +180,17 @@ function Player:init(map)
 end
 
 function Player:update(dt)
-    self.behaviors[self.state](dt)
-    self.animation:update(dt)
-    self.currentFrame = self.animation:getCurrentFrame()
-    self.x = self.x + self.dx * dt
+    if self.gameState == 'play' then
+        self.behaviors[self.state](dt)
+        self.animation:update(dt)
+        self.currentFrame = self.animation:getCurrentFrame()
+        self.x = self.x + self.dx * dt
 
-    self:calculateJumps()
+        self:calculateJumps()
 
-    -- apply velocity
-    self.y = self.y + self.dy * dt
+        -- apply velocity
+        self.y = self.y + self.dy * dt
+    end
 end
 
 -- jumping and block hitting logic
