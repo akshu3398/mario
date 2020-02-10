@@ -37,6 +37,7 @@ function Player:init(map)
 
     -- used to determine behavior and animations
     self.state = 'idle'
+    self.gameState = 'playing'
 
     -- determines sprite flipping
     self.direction = 'a'
@@ -46,8 +47,8 @@ function Player:init(map)
     self.dy = 0
 
     -- position on top of map tiles
-    self.y = map.tileHeight * ((map.mapHeight - 2) / 2) - self.height
-    self.x = map.tileWidth * 10
+    self.y = self.map.tileHeight * ((map.mapHeight - 2) / 2) - self.height
+    self.x = self.map.tileWidth * 10
 
     -- initialize all player animations
     self.animations = {
@@ -103,6 +104,7 @@ function Player:init(map)
             else
                 self.dx = 0
             end
+            self:checkPlayerInMap()
         end,
         ['walking'] = function(dt)
             
@@ -128,6 +130,7 @@ function Player:init(map)
             -- check for collisions moving a and d
             self:checkRightCollision()
             self:checkLeftCollision()
+            self:checkPlayerInMap()
 
             -- check if there's a tile directly beneath us
             if not self.map:collides(self.map:tileAt(self.x, self.y + self.height)) and
@@ -164,13 +167,14 @@ function Player:init(map)
                 -- if so, reset velocity and position and change state
                 self.dy = 0
                 self.state = 'idle'
-                self.animation = self.animations['idle']
+                self.animation = self.animations[self.state]
                 self.y = (self.map:tileAt(self.x, self.y + self.height).y - 1) * self.map.tileHeight - self.height
             end
 
             -- check for collisions moving a and d
             self:checkRightCollision()
             self:checkLeftCollision()
+            self:checkPlayerInMap()
         end
     }
 end
@@ -253,6 +257,16 @@ function Player:checkRightCollision()
     end
 end
 
+function Player:checkPlayerInMap( )
+    self.x = math.max(0, math.min(self.map.mapWidthPixels, self.x))
+    self.y = math.max(0, math.min(self.map.mapHeightPixels, self.y))
+
+    -- if player falls change game state to game-over
+    if self.y >= VIRTUAL_HEIGHT then
+        self.gameState = 'over'
+    end
+end
+
 function Player:render()
     local scaleX
 
@@ -267,4 +281,11 @@ function Player:render()
     -- draw sprite with scale factor and offsets
     love.graphics.draw(self.texture, self.currentFrame, math.floor(self.x + self.xOffset),
         math.floor(self.y + self.yOffset), 0, scaleX, 1, self.xOffset, self.yOffset)
+    -- display game over if player falls
+    if self.gameState == 'over' then
+        love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8*4))
+        love.graphics.printf('game over', 0, 30, self.map.camX + VIRTUAL_WIDTH, 'center')
+        love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8))
+        love.graphics.printf('Press esc to quit', 0, 100, self.map.camX + VIRTUAL_WIDTH, 'center')
+    end
 end
