@@ -116,7 +116,7 @@ function Map:init()
 
             x = x + 2
 
-        -- 10% chance to not generate anything, creating a gap
+        -- 10% chance to not generate nothing, creating a gap
         elseif math.random(10) ~= 1 then
             
             -- creates column of tiles going to bottom of map
@@ -135,6 +135,12 @@ function Map:init()
             -- increment X so we skip two scanlines, creating a 2-tile gap
             x = x + 2
         end
+    end
+    -- give our player ground to stand on
+    x = self:tileAt(self.player.x, self.player.y).x
+    -- creates column of tiles going to bottom of map
+    for y = self.mapHeight / 2, self.mapHeight do
+        self:setTile(x, y, TILE_BRICK)
     end
 
     -- start the background music
