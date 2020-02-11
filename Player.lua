@@ -199,12 +199,7 @@ function Player:calculateJumps()
     -- if we have negative y velocity (jumping), check if we collide
     -- with any blocks above us
     if self.dy < 0 then
-        if (self.map:tileAt(self.x, self.y).id ~= TILE_EMPTY and 
-            self.map:tileAt(self.x, self.y).id ~= CLOUD_LEFT and 
-            self.map:tileAt(self.x, self.y).id ~= CLOUD_RIGHT) or
-            (self.map:tileAt(self.x + self.width - 1, self.y).id ~= CLOUD_RIGHT and
-            self.map:tileAt(self.x + self.width - 1, self.y).id ~= CLOUD_LEFT and
-            self.map:tileAt(self.x + self.width - 1, self.y).id ~= TILE_EMPTY) then
+        if self.map:collides(self.map:tileAt(self.x, self.y)) or self.map:collides(self.map:tileAt(self.x + self.width - 1, self.y)) then
             -- reset y velocity
             self.dy = 0
 
@@ -265,7 +260,7 @@ end
 
 function Player:checkPlayerInMap( )
     self.x = math.max(0, math.min(self.map.mapWidthPixels, self.x))
-    self.y = math.max(0, math.min(self.map.mapHeightPixels, self.y))
+    self.y = math.min(self.map.mapHeightPixels, self.y)
 
     -- if player falls change game state to game-over
     if self.y >= VIRTUAL_HEIGHT then

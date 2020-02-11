@@ -38,7 +38,7 @@ function Map:init()
     self.sprites = generateQuads(self.spritesheet, self.tileWidth, self.tileHeight)
     self.music = love.audio.newSource('sounds/music.wav', 'static')
 
-    self.mapWidth = 30
+    self.mapWidth = 30 * 2
     self.mapHeight = 28
     self.tiles = {}
 
@@ -64,13 +64,21 @@ function Map:init()
         end
     end
 
+    self:generateLevel()
+    -- start the background music
+    self.music:setLooping(true)
+    self.music:setVolume(0.25)
+    self.music:play()
+end
+
+-- generate static level at the initialization of map
+function Map:generateLevel( )
     -- begin generating the terrain using vertical scan lines
     local x = 1
     while x < self.mapWidth do
-        
-        -- 5% chance to generate a cloud
+        -- 10% chance to generate a cloud
         -- make sure we're 2 tiles from edge at least
-        if x < self.mapWidth - 2 and math.random(20) == 1 then
+        if x < self.mapWidth - 2 and math.random(10) == 1 then
             -- choose a random vertical spot above where blocks/pipes generate
             local cloudStart = math.random(self.mapHeight / 2 - 6)
 
@@ -80,60 +88,80 @@ function Map:init()
                 self:setTile(x + 1, cloudStart, CLOUD_RIGHT)
             end
         end
+        -- for the left half of the map
+        if x < self.mapWidth / 2 then
+            -- 5% chance to generate a mushroom
+            if math.random(20) == 1 and x ~= self:tileAt(self.player.x, self.player.y).x then
+                -- top side of pipe
+                local mushroomStart = self.mapHeight / 2
+                
+                -- make sure there's no overlaping betn mushroom tops and bushes
+                if not (self:getTile(x, mushroomStart - 2) == BUSH_LEFT or self:getTile(x, mushroomStart - 2) == BUSH_RIGHT or self:getTile(x, mushroomStart - 1) == BUSH_LEFT or self:getTile(x, mushroomStart - 1) == BUSH_RIGHT) then
+                    self:setTile(x, mushroomStart - 2, MUSHROOM_TOP)
+                    self:setTile(x, mushroomStart - 1, MUSHROOM_BOTTOM)
+                end
 
-        -- 5% chance to generate a mushroom
-        if math.random(20) == 1 and x ~= self:tileAt(self.player.x, self.player.y).x then
-            -- top side of pipe
-            local mushroomStart = self.mapHeight / 2
-            
-            -- make sure there's no overlaping betn mushroom tops and bushes
-            if not (self:getTile(x, mushroomStart - 2) == BUSH_LEFT or self:getTile(x, mushroomStart - 2) == BUSH_RIGHT or self:getTile(x, mushroomStart - 1) == BUSH_LEFT or self:getTile(x, mushroomStart - 1) == BUSH_RIGHT) then
-                self:setTile(x, mushroomStart - 2, MUSHROOM_TOP)
-                self:setTile(x, mushroomStart - 1, MUSHROOM_BOTTOM)
+                -- creates column of tiles going to bottom of map
+                for y = self.mapHeight / 2, self.mapHeight do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+                -- next vertical scan line
+                x = x + 1
+
+            -- 10% chance to generate bush, being sure to generate away from edge
+            elseif math.random(10) == 1 and x < self.mapWidth - 3 then
+                local bushLevel = self.mapHeight / 2 - 1
+
+                for i = x+1, x+2 do
+                    -- place bush component and then column of bricks
+                    if i == x+1 then self:setTile(i, bushLevel, BUSH_LEFT) else self:setTile(i, bushLevel, BUSH_RIGHT) end
+
+                    for y = self.mapHeight / 2, self.mapHeight do self:setTile(i, y, TILE_BRICK) end
+
+                    -- 20% chance to create a block for Mario to hit
+                    if math.random(5) == 1 then self:setTile(i, self.mapHeight / 2 - 4, JUMP_BLOCK) end
+                end
+
+                x = x + 2
+
+            -- 10% chance to not generate nothing, creating a gap
+            elseif math.random(10) ~= 1 then
+                
+                -- creates column of tiles going to bottom of map
+                for y = self.mapHeight / 2, self.mapHeight do
+                    self:setTile(x, y, TILE_BRICK)
+                end
+
+                -- 5% chance to create a block for Mario to hit
+                if math.random(20) == 1 then
+                    self:setTile(x, self.mapHeight / 2 - 4, JUMP_BLOCK)
+                end
+
+                -- next vertical scan line
+                x = x + 1
+            else
+                -- increment X so we skip two scanlines, creating a 2-tile gap
+                x = x + 2
             end
-
-            -- creates column of tiles going to bottom of map
-            for y = self.mapHeight / 2, self.mapHeight do
-                self:setTile(x, y, TILE_BRICK)
-            end
-
-            -- next vertical scan line
-            x = x + 1
-
-        -- 10% chance to generate bush, being sure to generate away from edge
-        elseif math.random(10) == 1 and x < self.mapWidth - 3 then
-            local bushLevel = self.mapHeight / 2 - 1
-
-            for i = x+1, x+2 do
-                -- place bush component and then column of bricks
-                if i == x+1 then self:setTile(i, bushLevel, BUSH_LEFT) else self:setTile(i, bushLevel, BUSH_RIGHT) end
-
-                for y = self.mapHeight / 2, self.mapHeight do self:setTile(i, y, TILE_BRICK) end
-
-                -- 20% chance to create a block for Mario to hit
-                if math.random(5) == 1 then self:setTile(i, self.mapHeight / 2 - 4, JUMP_BLOCK) end
-            end
-
-            x = x + 2
-
-        -- 10% chance to not generate nothing, creating a gap
-        elseif math.random(10) ~= 1 then
-            
-            -- creates column of tiles going to bottom of map
-            for y = self.mapHeight / 2, self.mapHeight do
-                self:setTile(x, y, TILE_BRICK)
-            end
-
-            -- 5% chance to create a block for Mario to hit
-            if math.random(20) == 1 then
-                self:setTile(x, self.mapHeight / 2 - 4, JUMP_BLOCK)
-            end
-
-            -- next vertical scan line
-            x = x + 1
+        -- for the left half of the map
         else
+            -- up to 70% of the map generate a pyramid for mario to climb
+            if x < 0.7 * self.mapWidth then
+                local i = x - (self.mapWidth / 2)
+                for j = (self.mapHeight / 2) - 1, (self.mapHeight / 2) - i, -1 do
+                    self:setTile(x, j, MUSHROOM_BOTTOM)
+                end
+                self:setTile(x, (self.mapHeight / 2) - i, MUSHROOM_TOP)
+            else
+                -- todo: flag
+            end
+            -- creates column of tiles going to bottom of map
+            for y = self.mapHeight / 2, self.mapHeight do
+                self:setTile(x, y, TILE_BRICK)
+            end
             -- increment X so we skip two scanlines, creating a 2-tile gap
-            x = x + 2
+            x = x + 1
         end
     end
     -- give our player ground to stand on
@@ -142,11 +170,6 @@ function Map:init()
     for y = self.mapHeight / 2, self.mapHeight do
         self:setTile(x, y, TILE_BRICK)
     end
-
-    -- start the background music
-    self.music:setLooping(true)
-    self.music:setVolume(0.25)
-    self.music:play()
 end
 
 -- return whether a given tile is collidable
