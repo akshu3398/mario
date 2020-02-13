@@ -27,14 +27,14 @@ JUMP_BLOCK = 5
 JUMP_BLOCK_HIT = 9
 
 -- flag pole BLOCK
-FLAG_POLE_TOP = TILE_EMPTY * 2
-FLAG_POLE = FLAG_POLE_TOP + 4
-FLAG_POLE_BOTTOM = FLAG_POLE + 4
+POLE_TOP = TILE_EMPTY * 2
+POLE = POLE_TOP + 4
+POLE_BOTTOM = POLE + 4
 
 -- flag BLOCK
-FLAG_UNOPENED = FLAG_POLE_BOTTOM + 1
-FLAG_HALF_OPENED = FLAG_UNOPENED + 1
-FLAG_OPENED = FLAG_HALF_OPENED + 1
+FLAG_UNOPENED = 15
+FLAG_HALF_OPENED = FLAG_UNOPENED - 1
+FLAG_OPENED = FLAG_HALF_OPENED - 1
 
 -- a speed to multiply delta time to scroll map; smooth value
 local SCROLL_SPEED = 62
@@ -66,7 +66,16 @@ function Map:init()
     self.mapWidthPixels = self.mapWidth * self.tileWidth
     self.mapHeightPixels = self.mapHeight * self.tileHeight
 
+    -- game statemachine
     self.gameState = 'play'
+
+    -- current animation frame
+    self.flag = nil
+
+    -- used to determine flag behavior and animations
+    self.flagState = 'flag-unopened'
+    self.flagX = self.mapWidth - 9
+    self.flagY = self.mapHeight / 2 - 1
 
     -- first, fill map with empty tiles
     for y = 1, self.mapHeight do
@@ -76,7 +85,66 @@ function Map:init()
         end
     end
 
+    -- populate map with static level elements
     self:generateLevel()
+
+    -- initialize all map animations
+    self.animations = {
+        ['flag-unopened'] = Animation({
+            texture = self.spritesheet,
+            frames = {
+                self.sprites[FLAG_UNOPENED]
+            }
+        }),
+        ['flag-midway'] = Animation({
+            texture = self.spritesheet,
+            frames = {
+                self.sprites[FLAG_HALF_OPENED],
+                self.sprites[FLAG_OPENED]
+            },
+            interval = 0.15
+        }),
+        ['flag-opened'] = Animation({
+            texture = self.spritesheet,
+            frames = {
+                self.sprites[FLAG_OPENED]
+            }
+        })
+    }
+
+    -- behavior flag in map we can call based on player state
+    self.behaviors = {
+        ['flag-unopened'] = function(dt)
+            if self:collides(self:tileAt(self.player.x - 1, self.player.y + self.player.height)) == -1 or
+                self:collides(self:tileAt(self.player.x - 1, self.player.y)) == -1 or
+                self:collides(self:tileAt(self.player.x - 1, self.player.y - 1)) == -1 or
+                self:collides(self:tileAt(self.player.x, self.player.y - 1)) == -1 or
+                self:collides(self:tileAt(self.player.x + self.player.width - 1, self.player.y - 1)) == -1 or
+                self:collides(self:tileAt(self.player.x + self.player.width - 1, self.player.y)) == -1 or
+                self:collides(self:tileAt(self.player.x + self.player.width - 1, self.player.y + self.player.height)) == -1 then
+                self.flagState = 'flag-midway'
+                self.animations[self.flagState]:restart()
+                self.flagY = self.flagY - 1
+                self.animation = self.animations[self.flagState]
+            end
+        end,
+        ['flag-midway'] = function(dt)
+            if self.flagY < self.mapHeight / 2 - 11 and self.flagY > self.mapHeight / 2 - 1  then
+                self.flagY = self.flagY - 1
+            else
+                self.flagState = 'flag-opened'
+                self.animation = self.animations[self.flagState]
+            end            
+        end,
+        ['flag-opened'] = function(dt)
+            self.gameState = 'won'
+            self.animation = self.animations[self.flagState]
+        end,
+    }
+
+    -- initialize animation and current frame we should render
+    self.animation = self.animations[self.flagState]
+    self.flag = self.animation:getCurrentFrame()
 
     -- start the background music
     self.music:setLooping(true)
@@ -162,14 +230,13 @@ function Map:generateLevel( )
                     self:setTile(x, y, MUSHROOM_BOTTOM)
                 end
                 self:setTile(x, self.mapHeight / 2 - steps -1, MUSHROOM_TOP)
-            end
             -- generate flag pole
-            if x == self.mapWidth - 9 then
-                self:setTile(x, self.mapHeight / 2 - 1 , FLAG_POLE_BOTTOM)
-                for y = self.mapHeight / 2 - 2, self.mapHeight / 2 - 11, -1 do
-                    self:setTile(x, y, FLAG_POLE)
+            elseif x == self.flagX then
+                self:setTile(x, self.flagY, POLE_BOTTOM)
+                for y = self.flagY - 1, self.flagY - 10, -1 do
+                    self:setTile(x, y, POLE)
                 end
-                self:setTile(x, self.mapHeight / 2 - 11, FLAG_POLE_TOP)
+                self:setTile(x, self.flagY - 10, POLE_TOP)
             end
             -- creates column of tiles going to bottom of map
             for y = self.mapHeight / 2, self.mapHeight do
@@ -199,6 +266,8 @@ function Map:collides(tile)
     for _, v in ipairs(collidables) do
         if tile.id == v then
             return true
+        elseif tile.id == POLE or tile.id == POLE_BOTTOM or tile.id == POLE_TOP then
+            return -1
         end
     end
 
@@ -207,12 +276,19 @@ end
 
 -- function to update camera offset with delta time
 function Map:update(dt)
-    self.player:update(dt)
-    
-    -- keep camera's X coordinate following the player, preventing camera from
-    -- scrolling past 0 to the left and the map's width
-    self.camX = math.max(0, math.min(self.player.x - VIRTUAL_WIDTH / 2,
-        math.min(self.mapWidthPixels - VIRTUAL_WIDTH, self.player.x)))
+    if self.gameState == 'play' then
+        self.player:update(dt)
+        
+        -- keep camera's X coordinate following the player, preventing camera from
+        -- scrolling past 0 to the left and the map's width
+        self.camX = math.max(0, math.min(self.player.x - VIRTUAL_WIDTH / 2,
+                        math.min(self.mapWidthPixels - VIRTUAL_WIDTH, self.player.x)))
+
+        self.behaviors[self.flagState](dt)
+        self.animation:update(dt)
+        self.flag = self.animation:getCurrentFrame()
+    end
+    if self.flagState ~= 'flag-unopened' and self.flagY > 3 then self.flagY = self.flagY - 1 end
 end
 
 -- gets the tile type at a given pixel coordinate
@@ -236,6 +312,8 @@ end
 
 -- renders our map to the screen, to be called by main's render
 function Map:render()
+
+    -- rwnder the generated map
     for y = 1, self.mapHeight do
         for x = 1, self.mapWidth do
             local tile = self:getTile(x, y)
@@ -246,14 +324,19 @@ function Map:render()
         end
     end
 
+    -- draw flag
+    love.graphics.draw(self.spritesheet, self.flag, self.flagX * self.tileWidth, (self.flagY - 1) * self.tileHeight)
+
     -- display game over if player falls
-    if self.gameState == 'over' then
+    if self.gameState == 'over' or self.gameState == 'won' then
         love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8*4))
-        love.graphics.printf('game over', self.camX, 30, VIRTUAL_WIDTH, 'center')
+        local msg = (self.gameState == 'over') and 'game over' or 'you won'
+        love.graphics.printf(tostring(msg), self.camX, self.camY + VIRTUAL_HEIGHT/2 - 20, VIRTUAL_WIDTH, 'center')
         love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8))
     end
-    love.graphics.printf('Press esc to quit', self.camX, 100, VIRTUAL_WIDTH, 'center')
-    love.graphics.printf('"a" and "d" to move', self.camX, 110, VIRTUAL_WIDTH, 'center')
-    love.graphics.printf('space to jump', self.camX, 120, VIRTUAL_WIDTH, 'center')
+    love.graphics.printf('Press esc to quit', self.camX, 10, VIRTUAL_WIDTH, 'center')
+    love.graphics.printf('"a" and "d" to move', self.camX, 20, VIRTUAL_WIDTH, 'center')
+    love.graphics.printf('space to jump', self.camX, 30, VIRTUAL_WIDTH, 'center')
+
     self.player:render()
 end
