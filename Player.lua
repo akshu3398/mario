@@ -15,8 +15,8 @@ function Player:init(map)
     self.height = 20
 
     -- offset from top a to center to support sprite flipping
-    self.xOffset = self.width/2
-    self.yOffset = self.height/2
+    self.xOffset = self.width / 2
+    self.yOffset = self.height / 2
 
     -- reference to map for checking tiles
     self.map = map
@@ -37,7 +37,6 @@ function Player:init(map)
 
     -- used to determine behavior and animations
     self.state = 'idle'
-    self.gameState = 'play'
 
     -- determines sprite flipping
     self.direction = 'a'
@@ -180,7 +179,7 @@ function Player:init(map)
 end
 
 function Player:update(dt)
-    if self.gameState == 'play' then
+    if self.map.gameState == 'play' then
         self.behaviors[self.state](dt)
         self.animation:update(dt)
         self.currentFrame = self.animation:getCurrentFrame()
@@ -264,7 +263,7 @@ function Player:checkPlayerInMap( )
 
     -- if player falls change game state to game-over
     if self.y >= VIRTUAL_HEIGHT then
-        self.gameState = 'over'
+        self.map.gameState = 'over'
     end
 end
 
@@ -282,11 +281,4 @@ function Player:render()
     -- draw sprite with scale factor and offsets
     love.graphics.draw(self.texture, self.currentFrame, math.floor(self.x + self.xOffset),
         math.floor(self.y + self.yOffset), 0, scaleX, 1, self.xOffset, self.yOffset)
-    -- display game over if player falls
-    if self.gameState == 'over' then
-        love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8*4))
-        love.graphics.printf('game over', 0, 30, self.map.camX + VIRTUAL_WIDTH, 'center')
-        love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8))
-        love.graphics.printf('Press esc to quit', 0, 100, self.map.camX + VIRTUAL_WIDTH, 'center')
-    end
 end

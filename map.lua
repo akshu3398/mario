@@ -26,6 +26,16 @@ MUSHROOM_BOTTOM = 11
 JUMP_BLOCK = 5
 JUMP_BLOCK_HIT = 9
 
+-- flag pole BLOCK
+FLAG_POLE_TOP = TILE_EMPTY * 2
+FLAG_POLE = FLAG_POLE_TOP + 4
+FLAG_POLE_BOTTOM = FLAG_POLE + 4
+
+-- flag BLOCK
+FLAG_UNOPENED = FLAG_POLE_BOTTOM + 1
+FLAG_HALF_OPENED = FLAG_UNOPENED + 1
+FLAG_OPENED = FLAG_HALF_OPENED + 1
+
 -- a speed to multiply delta time to scroll map; smooth value
 local SCROLL_SPEED = 62
 
@@ -56,6 +66,8 @@ function Map:init()
     self.mapWidthPixels = self.mapWidth * self.tileWidth
     self.mapHeightPixels = self.mapHeight * self.tileHeight
 
+    self.gameState = 'play'
+
     -- first, fill map with empty tiles
     for y = 1, self.mapHeight do
         for x = 1, self.mapWidth do
@@ -65,20 +77,21 @@ function Map:init()
     end
 
     self:generateLevel()
+
     -- start the background music
     self.music:setLooping(true)
     self.music:setVolume(0.25)
     self.music:play()
 end
 
--- generate static level at the initialization of map
 function Map:generateLevel( )
     -- begin generating the terrain using vertical scan lines
     local x = 1
     while x < self.mapWidth do
-        -- 10% chance to generate a cloud
+        
+        -- 5% chance to generate a cloud
         -- make sure we're 2 tiles from edge at least
-        if x < self.mapWidth - 2 and math.random(10) == 1 then
+        if x < self.mapWidth - 2 and math.random(20) == 1 then
             -- choose a random vertical spot above where blocks/pipes generate
             local cloudStart = math.random(self.mapHeight / 2 - 6)
 
@@ -88,8 +101,8 @@ function Map:generateLevel( )
                 self:setTile(x + 1, cloudStart, CLOUD_RIGHT)
             end
         end
-        -- for the left half of the map
-        if x < self.mapWidth / 2 then
+
+        if x < 0.5 * self.mapWidth then
             -- 5% chance to generate a mushroom
             if math.random(20) == 1 and x ~= self:tileAt(self.player.x, self.player.y).x then
                 -- top side of pipe
@@ -140,27 +153,29 @@ function Map:generateLevel( )
 
                 -- next vertical scan line
                 x = x + 1
-            else
-                -- increment X so we skip two scanlines, creating a 2-tile gap
-                x = x + 2
             end
-        -- for the left half of the map
         else
-            -- up to 70% of the map generate a pyramid for mario to climb
-            if x < 0.7 * self.mapWidth then
-                local i = x - (self.mapWidth / 2)
-                for j = (self.mapHeight / 2) - 1, (self.mapHeight / 2) - i, -1 do
-                    self:setTile(x, j, MUSHROOM_BOTTOM)
+            -- generate pyramid
+            if x >= 0.5 * self.mapWidth and x < 0.7 * self.mapWidth then
+                local steps = math.min(x - self.mapWidth/2, 10)
+                for y = self.mapHeight / 2 - 1, self.mapHeight / 2 - steps, -1 do
+                    self:setTile(x, y, MUSHROOM_BOTTOM)
                 end
-                self:setTile(x, (self.mapHeight / 2) - i, MUSHROOM_TOP)
-            else
-                -- todo: flag
+                self:setTile(x, self.mapHeight / 2 - steps -1, MUSHROOM_TOP)
+            end
+            -- generate flag pole
+            if x == self.mapWidth - 9 then
+                self:setTile(x, self.mapHeight / 2 - 1 , FLAG_POLE_BOTTOM)
+                for y = self.mapHeight / 2 - 2, self.mapHeight / 2 - 11, -1 do
+                    self:setTile(x, y, FLAG_POLE)
+                end
+                self:setTile(x, self.mapHeight / 2 - 11, FLAG_POLE_TOP)
             end
             -- creates column of tiles going to bottom of map
             for y = self.mapHeight / 2, self.mapHeight do
                 self:setTile(x, y, TILE_BRICK)
             end
-            -- increment X so we skip two scanlines, creating a 2-tile gap
+
             x = x + 1
         end
     end
@@ -231,5 +246,14 @@ function Map:render()
         end
     end
 
+    -- display game over if player falls
+    if self.gameState == 'over' then
+        love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8*4))
+        love.graphics.printf('game over', self.camX, 30, VIRTUAL_WIDTH, 'center')
+        love.graphics.setFont(love.graphics.newFont('fonts/font.ttf', 8))
+    end
+    love.graphics.printf('Press esc to quit', self.camX, 100, VIRTUAL_WIDTH, 'center')
+    love.graphics.printf('"a" and "d" to move', self.camX, 110, VIRTUAL_WIDTH, 'center')
+    love.graphics.printf('space to jump', self.camX, 120, VIRTUAL_WIDTH, 'center')
     self.player:render()
 end
